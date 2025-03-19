@@ -1,0 +1,42 @@
+name: Deploy MERN App to Ubuntu (WSL)
+
+on:
+  push:
+    branches:
+      - main # Runs when pushing to the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Deploy to Ubuntu (WSL)
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            echo "🚀 Connecting to Ubuntu WSL server..."
+            
+            # Navigate to project directory
+            cd /home/${{ secrets.SERVER_USER }}/login 
+
+            echo "🔄 Pulling latest code..."
+            git fetch
+            git pull origin main
+
+            echo "📦 Installing backend dependencies..."
+            cd backend
+            npm install
+            pm2 restart mern-backend  # Restart backend with PM2
+
+            echo "💻 Installing frontend dependencies & building..."
+            cd ../my-app
+            npm install
+            npm run build
+
+            echo "🌐 Restarting Nginx..."
+            sudo systemctl restart nginx  # Corrected this command
+
+            echo "✅ Deployment successful!"
+          EOF
